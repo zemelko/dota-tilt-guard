@@ -67,7 +67,7 @@ struct GuardView: View {
             HStack {
                 Text(ui("Полностью локально · без нейросети"))
                 Spacer()
-                Text("v0.5.0")
+                Text("v0.5.1")
             }.font(.system(size: 11)).foregroundStyle(.secondary)
             Text(ui(hotkeyAvailable ? "Окно: ⌃⌥Пробел. Закрытие окна не выключает защиту." : "Окно можно открыть через значок Dota Tilt Guard в строке меню."))
                 .font(.system(size: 11)).foregroundStyle(.secondary)

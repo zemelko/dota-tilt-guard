@@ -46,7 +46,7 @@ final class ChatPanel: NSPanel {
         panel.center()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "checkmark.shield", accessibilityDescription: "Dota Tilt Guard")
+        statusItem.button?.image = AppBrand.menuIcon()
         rebuildMenus()
         languageObserver = InterfaceSettings.shared.$language.dropFirst().receive(on: RunLoop.main).sink { [weak self] _ in
             self?.rebuildMenus()
@@ -102,7 +102,7 @@ final class ChatPanel: NSPanel {
     @objc private func about() {
         let alert = NSAlert()
         let ui = InterfaceSettings.shared
-        alert.messageText = ui("Dota Tilt Guard · версия \("0.5.0")")
+        alert.messageText = ui("Dota Tilt Guard · версия \("0.5.1")")
         alert.informativeText = ui("Разреши Универсальный доступ, включи защиту, вернись в Dota и нажми Esc. После этого открывай чат стандартным Enter. Найденное ругательство остановит отправку. Исправь текст через Backspace или выдели всё через Command+A / Control+A и удали либо замени. После удаления пустой чат можно закрыть Enter. Также можно начать заново через Esc. Сложное редактирование и смена окна требуют повторного Esc.\n\nТекстовый чат проверяется по локальному словарю. Голосовой MVP использует локальное распознавание macOS и BlackHole 2ch: ругательство отключает передачу на 3 секунды, а распознавание продолжает слушать. Аудио и история сообщений не сохраняются. Перехват подключается только к процессу Dota. Приложение не меняет файлы и память игры.\n\nСловарь распознаёт не все оскорбления. При завершении приложения защита прекращается. Окно можно закрывать — приложение продолжит работать в строке меню.")
         alert.addButton(withTitle: ui("Понятно"))
         alert.runModal()

@@ -94,7 +94,7 @@ struct VoiceView: View {
             HStack {
                 Text(ui("Без записи аудио и истории · локальные модели macOS"))
                 Spacer()
-                Text("v0.5.0")
+                Text("v0.5.1")
             }.font(.system(size: 10)).foregroundStyle(.secondary)
             Spacer(minLength: 0)
         }.padding(28).frame(width: 680, height: 720, alignment: .top)

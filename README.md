@@ -58,6 +58,10 @@ BlackHole has its own GPL-3.0 terms and is not included in this repository or ap
 
 This repository is public for inspection, **not released under MIT or another open-source license**. See [COPYRIGHT.md](COPYRIGHT.md). Third-party rights are unchanged.
 
+## Version 0.5.1
+
+- Added a small Dota-and-shield menu bar icon matching the app branding.
+
 ## Version 0.5.0
 
 - Renamed to Dota Tilt Guard with a chat-and-shield icon.
