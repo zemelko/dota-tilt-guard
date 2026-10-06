@@ -16,21 +16,21 @@ import CalmChatCore
     @Published private(set) var remaining: Double = 0
     @Published private(set) var level: Float = 0
     @Published private(set) var detections = 0
-    @Published private(set) var status = "Голосовая защита выключена"
+    @Published private(set) var status: UIMessage = "Голосовая защита выключена"
     @Published private(set) var transcript = ""
     private var gate = VoiceGate()
     private var audio: VoiceAudio?
     private var stopRecognizer: (() -> Void)?
     private var startTask: Task<Void, Never>?
     private var timer: Timer?
-    private var fault: String?
+    private var fault: UIMessage?
     private var priorInput: AudioDeviceID?
     private var virtualInput: AudioDeviceID?
     private var startedAt: TimeInterval = 0
     private var generation = 0
     private init() { refreshDevices() }
 
-    var headline: String {
+    var headline: UIMessage {
         if starting { return "Подготовка микрофона…" }
         if !enabled { return "Голосовая защита выключена" }
         if fault != nil { return "Передача отключена · нужна проверка" }
@@ -60,7 +60,7 @@ import CalmChatCore
             do {
                 let allowed = await AVCaptureDevice.requestAccess(for: .audio)
                 try Task.checkCancellation()
-                guard allowed else { throw VoiceError.message("Разреши Calm Chat доступ к микрофону в настройках macOS.") }
+                guard allowed else { throw VoiceError.message("Разреши Dota Tilt Guard доступ к микрофону в настройках macOS.") }
                 // Set the system default before creating engines. Changing it after starting
                 // an AVAudioEngine can migrate its input to the virtual device.
                 let previous = AudioDevices.defaultInput()
@@ -104,7 +104,7 @@ import CalmChatCore
                 guard self.generation == current else { return }
                 let restoration = self.cleanup()
                 self.starting = false; self.enabled = false
-                self.status = [error.localizedDescription, restoration].compactMap { $0 }.joined(separator: " ")
+                self.status = .joined([voiceMessage(error), restoration].compactMap { $0 }, " ")
             }
         }
     }
@@ -112,7 +112,7 @@ import CalmChatCore
         guard enabled, fault == nil else { return }
         gate.mute(now: ProcessInfo.processInfo.systemUptime); tick()
     }
-    private func fail(_ message: String) {
+    private func fail(_ message: UIMessage) {
         fault = message; audio?.pcm.setMuted(true); muted = true; status = message
     }
     private func tick() {
@@ -137,11 +137,11 @@ import CalmChatCore
         status = restoration ?? "Голосовая защита выключена."
     }
     /// A restoration error must remain visible: the user may otherwise be left with a silent input.
-    @discardableResult private func cleanup() -> String? {
+    @discardableResult private func cleanup() -> UIMessage? {
         timer?.invalidate(); timer = nil
         audio?.stop(); audio = nil
         stopRecognizer?(); stopRecognizer = nil
-        var restoration: String?
+        var restoration: UIMessage?
         if let old = priorInput, let bridge = virtualInput, AudioDevices.defaultInput() == bridge {
             do {
                 guard AudioDevices.list().contains(where: { $0.id == old }) else {

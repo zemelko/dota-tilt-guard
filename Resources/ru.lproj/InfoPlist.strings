@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "Локально распознавать твою речь и временно отключать передачу голоса при ругательствах.";
+"NSSpeechRecognitionUsageDescription" = "Распознавать речь только на этом Mac для голосового фильтра.";
+"NSAccessibilityUsageDescription" = "Проверять ввод только в Dota 2 и блокировать Enter при найденных оскорблениях.";

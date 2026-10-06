@@ -59,9 +59,9 @@ final class VoiceAudio {
     private var active = false
     private var generation = 0
     private let activityLock = NSLock()
-    var onError: ((String) -> Void)?
+    var onError: ((UIMessage) -> Void)?
 
-    func routeDescription() -> String {
+    func routeDescription() -> UIMessage {
         func current(_ unit: AudioUnit?) -> AudioDeviceID {
             guard let unit else { return 0 }
             var id: AudioDeviceID = 0
@@ -108,7 +108,7 @@ final class VoiceAudio {
                     if let output = try Self.convert(copy, with: converter), let data = output.floatChannelData?[0] {
                         self.pcm.push(data, count: Int(output.frameLength))
                     }
-                } catch { self.pcm.setMuted(true); self.onError?(error.localizedDescription) }
+                } catch { self.pcm.setMuted(true); self.onError?(voiceMessage(error)) }
             }
         }
         tapped = true
@@ -150,7 +150,10 @@ final class VoiceAudio {
             if supplied { state.pointee = .noDataNow; return nil }
             supplied = true; state.pointee = .haveData; return input
         }
-        if status == .error { throw error ?? VoiceError.message("Ошибка преобразования звука.") as NSError }
+        if status == .error {
+            if let error { throw error }
+            throw VoiceError.message("Ошибка преобразования звука.")
+        }
         return output.frameLength > 0 ? output : nil
     }
 }

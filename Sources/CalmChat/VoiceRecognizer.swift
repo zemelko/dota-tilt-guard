@@ -12,13 +12,13 @@ import CalmChatCore
     private var continuation: AsyncStream<AnalyzerInput>.Continuation?
     private var feed: SpeechAudioFeed?
     var onResult: ((String, [VoiceWord]) -> Void)?
-    var onError: ((String) -> Void)?
+    var onError: ((UIMessage) -> Void)?
 
     func prepare(language: String, inputFormat: AVAudioFormat) async throws -> (AVAudioPCMBuffer) -> Void {
         let locale = Locale(identifier: language)
         guard let supported = await DictationTranscriber.supportedLocale(equivalentTo: locale),
               await DictationTranscriber.installedLocales.contains(where: { $0.identifier == supported.identifier }) else {
-            throw VoiceError.message("Локальная модель этого языка не установлена. Включи диктовку для него в настройках macOS, затем попробуй снова.")
+            throw VoiceError.message("Локальная модель этого языка не установлена. Открой «Установка компонентов» через шестерёнку и загрузи язык.")
         }
         try Task.checkCancellation()
         // Explicitly omit etiquetteReplacements so profanity is not replaced by asterisks.
@@ -52,12 +52,12 @@ import CalmChatCore
                 }
                 if !Task.isCancelled { self?.onError?("Распознавание остановилось. Перезапусти голосовую защиту.") }
             } catch {
-                if !Task.isCancelled { self?.onError?("Ошибка локального распознавания: \(error.localizedDescription)") }
+                if !Task.isCancelled { self?.onError?("Ошибка локального распознавания: \(voiceMessage(error))") }
             }
         }
         analysisTask = Task { [weak self] in
             do { _ = try await analyzer.analyzeSequence(stream) }
-            catch { if !Task.isCancelled { self?.onError?("Распознавание не получает звук: \(error.localizedDescription)") } }
+            catch { if !Task.isCancelled { self?.onError?("Распознавание не получает звук: \(voiceMessage(error))") } }
         }
         return { buffer in feed.consume(buffer) }
     }
@@ -80,7 +80,7 @@ private final class SpeechAudioFeed: @unchecked Sendable {
     private let lock = NSLock()
     private var stopped = false
     private var frames: Int64 = 0
-    var onError: ((String) -> Void)?
+    var onError: ((UIMessage) -> Void)?
     init(inputFormat: AVAudioFormat, outputFormat: AVAudioFormat, continuation: AsyncStream<AnalyzerInput>.Continuation) throws {
         guard let converter = AVAudioConverter(from: inputFormat, to: outputFormat) else { throw VoiceError.message("Не удалось преобразовать звук для распознавания.") }
         self.converter = converter; self.continuation = continuation
@@ -96,6 +96,6 @@ private final class SpeechAudioFeed: @unchecked Sendable {
             if case .dropped = continuation.yield(AnalyzerInput(buffer: output, bufferStartTime: start)) {
                 stop(); onError?("Распознавание не успевает за звуком. Перезапусти голосовую защиту.")
             }
-        } catch { stop(); onError?(error.localizedDescription) }
+        } catch { stop(); onError?(voiceMessage(error)) }
     }
 }

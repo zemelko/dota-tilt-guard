@@ -11,8 +11,13 @@ struct AudioDevice: Identifiable, Hashable {
 }
 
 enum VoiceError: LocalizedError {
-    case message(String)
-    var errorDescription: String? { if case .message(let text) = self { return text }; return nil }
+    case message(UIMessage)
+    var errorDescription: String? { if case .message(let text) = self { return text.text(in: .saved) }; return nil }
+}
+
+func voiceMessage(_ error: Error) -> UIMessage {
+    if let error = error as? VoiceError, case .message(let message) = error { return message }
+    return .verbatim(error.localizedDescription)
 }
 
 enum AudioDevices {

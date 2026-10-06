@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Combine
 
 @main enum CalmChatMain {
     @MainActor static func main() {
@@ -17,6 +18,7 @@ final class ChatPanel: NSPanel {
 }
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+    private var languageObserver: AnyCancellable?
     private let shortcut = GlobalShortcut()
     private let navigation = AppNavigation()
     private var panel: ChatPanel!
@@ -24,19 +26,12 @@ final class ChatPanel: NSPanel {
     private var returnTo: NSRunningApplication?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let menu = NSMenu()
-        let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "О Calm Chat", action: #selector(about), keyEquivalent: "")
-        appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Завершить Calm Chat", action: #selector(quit), keyEquivalent: "q")
-        let appItem = NSMenuItem(); appItem.submenu = appMenu; menu.addItem(appItem)
-        NSApp.mainMenu = menu
         shortcut.action = { [weak self] in self?.invoke() }
         let hotkeyAvailable = shortcut.install()
 
         panel = ChatPanel(contentRect: NSRect(x: 0, y: 0, width: 680, height: 660),
                           styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel], backing: .buffered, defer: false)
-        panel.title = "Calm Chat"
+        panel.title = "Dota Tilt Guard"
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
         panel.isMovableByWindowBackground = true
@@ -51,17 +46,34 @@ final class ChatPanel: NSPanel {
         panel.center()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "bubble.left.and.text.bubble.right", accessibilityDescription: "Calm Chat")
-        statusItem.button?.toolTip = "Calm Chat · ⌃⌥Пробел"
+        statusItem.button?.image = NSImage(systemSymbolName: "checkmark.shield", accessibilityDescription: "Dota Tilt Guard")
+        rebuildMenus()
+        languageObserver = InterfaceSettings.shared.$language.dropFirst().receive(on: RunLoop.main).sink { [weak self] _ in
+            self?.rebuildMenus()
+        }
+        showPanel()
+    }
+
+
+    private func rebuildMenus() {
+        let ui = InterfaceSettings.shared
+        let menu = NSMenu()
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: ui("О Dota Tilt Guard"), action: #selector(about), keyEquivalent: "")
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: ui("Завершить Dota Tilt Guard"), action: #selector(quit), keyEquivalent: "q")
+        for item in appMenu.items { item.target = self }
+        let appItem = NSMenuItem(); appItem.submenu = appMenu; menu.addItem(appItem)
+        NSApp.mainMenu = menu
+        statusItem.button?.toolTip = ui("Dota Tilt Guard · ⌃⌥Пробел")
         let statusMenu = NSMenu()
-        statusMenu.addItem(withTitle: "Открыть Calm Chat    ⌃⌥Пробел", action: #selector(openPanel), keyEquivalent: "")
-        statusMenu.addItem(withTitle: "Выключить перехват чата", action: #selector(disableGuard), keyEquivalent: "")
-        statusMenu.addItem(withTitle: "Как пользоваться", action: #selector(about), keyEquivalent: "")
+        statusMenu.addItem(withTitle: ui("Открыть Dota Tilt Guard    ⌃⌥Пробел"), action: #selector(openPanel), keyEquivalent: "")
+        statusMenu.addItem(withTitle: ui("Выключить перехват чата"), action: #selector(disableGuard), keyEquivalent: "")
+        statusMenu.addItem(withTitle: ui("Как пользоваться"), action: #selector(about), keyEquivalent: "")
         statusMenu.addItem(.separator())
-        statusMenu.addItem(withTitle: "Завершить", action: #selector(quit), keyEquivalent: "q")
+        statusMenu.addItem(withTitle: ui("Завершить"), action: #selector(quit), keyEquivalent: "q")
         for item in statusMenu.items { item.target = self }
         statusItem.menu = statusMenu
-        showPanel()
     }
 
     private func invoke() {
@@ -89,9 +101,10 @@ final class ChatPanel: NSPanel {
 
     @objc private func about() {
         let alert = NSAlert()
-        alert.messageText = "Calm Chat · версия 0.4.0"
-        alert.informativeText = "Разреши Универсальный доступ, включи защиту, вернись в Dota и нажми Esc. После этого открывай чат стандартным Enter. Найденное ругательство остановит отправку. Исправь текст через Backspace или выдели всё через Command+A / Control+A и удали либо замени. После удаления пустой чат можно закрыть Enter. Также можно начать заново через Esc. Сложное редактирование и смена окна требуют повторного Esc.\n\nТекстовый чат проверяется по локальному словарю. Голосовой MVP использует локальное распознавание macOS и BlackHole 2ch: ругательство отключает передачу на 3 секунды, а распознавание продолжает слушать. Аудио и история сообщений не сохраняются. Перехват подключается только к процессу Dota. Приложение не меняет файлы и память игры.\n\nСловарь распознаёт не все оскорбления. При завершении приложения защита прекращается. Окно можно закрывать — приложение продолжит работать в строке меню."
-        alert.addButton(withTitle: "Понятно")
+        let ui = InterfaceSettings.shared
+        alert.messageText = ui("Dota Tilt Guard · версия \("0.5.0")")
+        alert.informativeText = ui("Разреши Универсальный доступ, включи защиту, вернись в Dota и нажми Esc. После этого открывай чат стандартным Enter. Найденное ругательство остановит отправку. Исправь текст через Backspace или выдели всё через Command+A / Control+A и удали либо замени. После удаления пустой чат можно закрыть Enter. Также можно начать заново через Esc. Сложное редактирование и смена окна требуют повторного Esc.\n\nТекстовый чат проверяется по локальному словарю. Голосовой MVP использует локальное распознавание macOS и BlackHole 2ch: ругательство отключает передачу на 3 секунды, а распознавание продолжает слушать. Аудио и история сообщений не сохраняются. Перехват подключается только к процессу Dota. Приложение не меняет файлы и память игры.\n\nСловарь распознаёт не все оскорбления. При завершении приложения защита прекращается. Окно можно закрывать — приложение продолжит работать в строке меню.")
+        alert.addButton(withTitle: ui("Понятно"))
         alert.runModal()
     }
 

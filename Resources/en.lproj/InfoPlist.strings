@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "Recognize your speech locally and briefly mute outgoing voice when abuse is detected.";
+"NSSpeechRecognitionUsageDescription" = "Recognize speech only on this Mac for the voice filter.";
+"NSAccessibilityUsageDescription" = "Check keyboard input only in Dota 2 and block Enter when abuse is detected.";

@@ -1,55 +1,66 @@
-# Calm Chat 0.4.0
+# Dota Tilt Guard
 
-Native Swift / AppKit / SwiftUI utility. Text protection requires macOS 13+; the optional local voice MVP requires macOS 26+. This build targets Apple Silicon. No third-party Swift packages, bundled models, network clients, audio recordings or message history. App bundle file contents: 853,159 bytes.
+<img src="Resources/AppIcon.png" width="128" alt="Dota Tilt Guard icon">
 
-## Text protection
+A small native macOS app that helps you pause before sending abuse in Dota 2. Formerly Calm Chat. Russian and English interface, with a language switch that remembers your choice.
 
-`NativeChatGuard` installs an active per-process Quartz event tap for Dota after the user enables protection and macOS confirms Accessibility access. It mirrors Escape, Enter, typing, Backspace and Command+A / Control+A. Known abuse suppresses Enter and its key-up. Deleting the entire tracked draft permits Enter to close the empty chat. Unsupported editing and focus loss require Escape to resynchronize.
+[Справка на русском](README.ru.md) · [Download the DMG](https://github.com/zemelko/calm-chat/releases/latest)
 
-`ChatFilter` uses normalized Russian/English word and phrase patterns. Coverage is incomplete and can produce false positives. No game memory, injected libraries, game-file edits or synthetic gameplay input. The original user-confirmed text behavior is retained.
+## Install
 
-## Voice MVP
+1. Open the DMG and drag **Dota Tilt Guard.app** into **Applications**.
+2. Eject the disk image and launch the app from Applications. Quit any older Calm Chat / Dota Tilt Guard instance first.
+3. For text protection, allow the app in **System Settings → Privacy & Security → Accessibility**. Enable protection, return to Dota and press Esc before opening chat with Enter.
+4. For voice protection, open **Component setup** using the gear button. Install **BlackHole 2ch** from the official link and restart the Mac, then download your speech language through macOS if needed. Choose your physical microphone and that language in the Voice tab, and allow Microphone access.
+5. In Dota, use the system microphone or BlackHole 2ch. Enable voice protection before speaking.
 
-The selected physical microphone feeds two independent paths:
+The current binary is for **Apple Silicon**. Text protection requires **macOS 13+**; voice protection requires **macOS 26+**, a microphone, BlackHole 2ch and local Apple dictation assets. Dota 2 is installed separately through Steam. Python, Homebrew, Node.js, API keys and third-party AI runtimes are not required.
 
-1. `DictationTranscriber` / `SpeechAnalyzer` receive continuous audio for local transcription, even while outgoing audio is muted.
-2. A bounded mono PCM queue and a second `AVAudioEngine` send audio to BlackHole 2ch. A detection clears the queue and outputs zeros for three seconds. A new detection extends the pause. Silence and speech with no new detections allow transmission to resume.
+The DMG contains the app, installation instructions and official dependency links. BlackHole and Apple's language assets are **not bundled**. The first voice setup needs an internet connection; filtering and speech recognition run locally afterward. Language downloads fetch assets from Apple and do not send audio or chat text. No audio recordings, analytics or message history are stored.
 
-The app changes the system default input to BlackHole **before creating the audio engines**, then explicitly binds capture to the selected physical microphone. Doing this after engine startup caused capture to migrate to the virtual device and receive silence on this Mac. The UI displays actual capture and output device names.
+This is an **ad-hoc signed, non-notarized development build**. A downloaded copy may be blocked by Gatekeeper. If you trust this release, use macOS's per-app **Privacy & Security → Open Anyway** workflow. No system-wide security changes are needed. After an update, macOS may require removing the old Accessibility entry and adding the current app from Applications again.
 
-Recognition uses installed macOS dictation assets only. It does not request downloads or use remote recognition. Russian and English are selectable; both local assets are present on this Mac. Profanity replacement is explicitly disabled. One current transcript is displayed in memory, without persisted history. Partial and final hypotheses share utterance/word-position identities so finalization does not reset the cooldown for an old word.
+## What it does
 
-The first abusive word can escape before recognition. This MVP does not detect intonation and does not promise complete abuse coverage. Applications explicitly using a different microphone bypass the virtual input. Recognition/audio errors mute transmission until restart. Switching the system input elsewhere shows an error but cannot prevent another application from using that input. On normal stop or quit, the previous system input is restored when available; restoration failures are shown. After a crash, select a physical input in macOS Sound settings if BlackHole remains selected.
+Text protection watches keyboard input only in the Dota process. A local Russian/English dictionary checks the tracked draft before Enter sends it. Known abuse blocks sending. Typing, Backspace and select-all with Command+A / Control+A followed by deletion or replacement are supported. An empty draft can be closed with Enter. Pasting, partial selection, arrow keys, mouse editing or focus changes require Esc and a fresh draft. The pre-game click-to-type chat is not supported.
 
-BlackHole 2ch is a separately installed dependency, not part of this app or source archive. The official 0.7.1 installer was verified against its published checksum and Apple-trusted installer signature; the user installed it and rebooted. Expected device UID is `BlackHole2ch_UID` with two input and output channels.
+Voice protection sends the physical microphone to a local Apple recognizer and separately to BlackHole. Detecting abuse clears queued outgoing audio and sends silence for three seconds. New abuse extends the pause while recognition continues listening. The first word can escape before recognition. There is no intonation detection, and dictionary coverage is incomplete in both modes.
 
-References: [Apple DictationTranscriber](https://developer.apple.com/documentation/speech/dictationtranscriber), [BlackHole](https://existential.audio/blackhole/).
+The voice filter applies to apps using the system input. A different microphone explicitly selected in another app bypasses it. Stopping protection or quitting normally restores the previous system input. After a crash, select your physical microphone in macOS Sound settings if BlackHole remains selected. Audio and recognition failures mute the outgoing stream until restart.
 
-## Build, test and retain versions
+The app does not edit Dota files or game memory, inject code, or automate gameplay. This is an independent project, not affiliated with or endorsed by Valve. Dota 2 belongs to Valve. No anti-cheat compatibility guarantee is made.
 
-Requires Apple Command Line Tools with a macOS 26+ SDK. Quit the running app before rebuilding.
+## Build and test
+
+Requires Apple Command Line Tools with a macOS 26+ SDK. No third-party Swift packages. Quit the app before replacing a build.
 
 ```sh
 ./scripts/test.sh '/absolute/path/checks'
-./scripts/build.sh '/absolute/path/Calm Chat.app' '/absolute/path/build'
-./scripts/dmg.sh '/absolute/path/Calm Chat.app' '/absolute/path/output' '/absolute/path/work'
-./scripts/archive-release.sh '/absolute/path/Calm Chat.app' '/absolute/path/releases'
+./scripts/build.sh '/absolute/path/Dota Tilt Guard.app' '/absolute/path/build'
+./scripts/dmg.sh '/absolute/path/Dota Tilt Guard.app' '/absolute/path/output' '/absolute/path/work'
+./scripts/archive-release.sh '/absolute/path/Dota Tilt Guard.app' '/absolute/path/releases'
 ```
 
-The build signs a clean staged bundle before replacing the current app. `archive-release.sh` saves an app, its corresponding source snapshot and checksums under its version number. Existing releases cannot be overwritten. Increase the version before saving another release. Version 0.3.1 is preserved as the original working binary; its original source snapshot was not retained. Starting with 0.4.0, archives include sources.
+The build signs a clean staged bundle before replacing the destination. Release archives contain the app, source snapshot and checksums; existing versions cannot be overwritten. Version 0.5.0 uses its own bundle identifier, `com.zemelko.dotatiltguard`, so macOS permissions appear under Dota Tilt Guard instead of Calm Chat. Grant permissions to the new app from Applications and remove old Calm Chat entries. Run only one version at a time.
 
-Releases share a bundle identifier and should be run one at a time. The main `outputs/Calm Chat.app` is the current build. Older apps are available under `outputs/releases/<version>/Calm Chat.app`.
+Automated checks cover filtering, tracked input, select-all deletion, voice cooldown and repeated hypotheses; PCM silence, queue clearing, fresh audio and channel conversion; and localization templates. Live microphone transcription and BlackHole mute/resume were checked during 0.4.0 development. A particular Dota session's selected input still needs an in-game check.
 
-## Permissions
+## Dependencies and rights
 
-Text protection needs Accessibility; voice protection needs Microphone access. The ad-hoc signature changes when executable contents change. macOS may show an enabled Accessibility switch for an older signature. Re-add the current app with the Accessibility “+” button, or remove only the stale Calm Chat entry and add it again. Do not modify TCC databases or weaken signing requirements. A stable distribution signing identity would avoid these development-build permission refreshes.
+| Component | Distribution | Purpose |
+| --- | --- | --- |
+| Swift runtime, AppKit, SwiftUI, CoreAudio, AVFoundation, Speech | macOS | Interface, input, audio and local recognition |
+| [BlackHole 2ch](https://github.com/ExistentialAudio/BlackHole) | Separate official installer | Virtual microphone for voice protection |
+| Apple dictation assets | Downloaded by macOS on request | Local Russian / English recognition |
+| Dota 2 | Separate Steam installation | Target game |
 
-## Verification
+BlackHole has its own GPL-3.0 terms and is not included in this repository or app. Its authors request separate licensing for non-GPL integrations. The app accesses the installed audio device through CoreAudio; it contains no BlackHole code.
 
-- Eight core scenarios / 75 assertions: filtering, chat input state, select-all deletion, voice cooldown, repeated hypotheses and new abusive words.
-- PCM checks: mute outputs zeros, continued input metering during mute, queued audio is discarded, fresh audio resumes, both output channels match, bounded backlog, independent capture buffers and continuous sample-rate conversion.
-- Synthetic Russian and English speech through the actual local recognizer: one abusive phrase triggers one detection in each language; partial/final updates do not retrigger it; cooldown recovers.
-- Live MacBook microphone: recognized speech and detections visible in the app after fixing device order; the user reports that it appears to work.
-- Independent BlackHole input meter: nonzero transmitted audio, zero samples during mute and resumed audio afterward; only numerical levels were collected, no microphone audio was saved.
+This repository is public for inspection, **not released under MIT or another open-source license**. See [COPYRIGHT.md](COPYRIGHT.md). Third-party rights are unchanged.
 
-An in-game voice confirmation remains a user check. Reading the virtual device proves audio routing, but does not prove which input a particular Dota session has selected.
+## Version 0.5.0
+
+- Renamed to Dota Tilt Guard with a chat-and-shield icon.
+- Added persistent Russian / English interface switching, including menus and status messages.
+- Added component setup with BlackHole links and explicit Apple language downloads.
+- Retained the text filter and voice mute behavior from 0.4.0.

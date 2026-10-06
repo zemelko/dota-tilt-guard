@@ -1,0 +1,13 @@
+.DS_Store
+.build/
+.swiftpm/
+build/
+*.app/
+*.dmg
+*.dmg.sha256
+*.tar.gz
+*.zip
+.env
+.env.*
+*.pem
+*.key

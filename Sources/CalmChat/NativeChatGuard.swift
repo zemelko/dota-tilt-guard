@@ -7,12 +7,12 @@ import CalmChatCore
     static let shared = NativeChatGuard()
     @Published private(set) var enabled = false
     @Published private(set) var connected = false
-    @Published private(set) var status = "Выключен"
+    @Published private(set) var status: UIMessage = "Выключен"
     @Published private(set) var blockedCount = 0
     @Published private(set) var permissionGranted = AXIsProcessTrusted()
     @Published private(set) var keyCount = 0
     @Published private(set) var enterCount = 0
-    @Published private(set) var lastEvent = "Событий пока нет"
+    @Published private(set) var lastEvent: UIMessage = "Событий пока нет"
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
     private var pid: pid_t?
@@ -48,7 +48,7 @@ import CalmChatCore
         }
     }
 
-    var headline: String {
+    var headline: UIMessage {
         if !permissionGranted { return "Нет доступа — защита не работает" }
         if !enabled { return "Защита выключена" }
         if !connected { return "Защита ожидает подключения" }
@@ -59,7 +59,7 @@ import CalmChatCore
     func enable() {
         refreshPermission()
         guard permissionGranted else {
-            status = "macOS не подтвердила доступ этой сборке. Если переключатель уже включён, удали Calm Chat из списка Accessibility и добавь заново."
+            status = "macOS не подтвердила доступ этой сборке. Если переключатель уже включён, удали Dota Tilt Guard из списка Accessibility и добавь заново."
             return
         }
         guard !enabled else { return }
@@ -200,13 +200,13 @@ import CalmChatCore
             if !message.isEmpty {
                 blockedCount += 1
                 // Keep the event callback short; display the warning on the next run-loop turn.
-                DispatchQueue.main.async { [weak self] in self?.showToast(message) }
+                DispatchQueue.main.async { [weak self] in self?.showToast(UIMessage(key: message)) }
             }
             return nil
         }
     }
 
-    private func showToast(_ message: String) {
+    private func showToast(_ message: UIMessage) {
         guard enabled, NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else { return }
         if toast == nil {
             let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 560, height: 112),
@@ -217,17 +217,7 @@ import CalmChatCore
             panel.ignoresMouseEvents = true; panel.hidesOnDeactivate = false
             toast = panel
         }
-        toast?.contentView = NSHostingView(rootView:
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: "hand.raised.fill").font(.system(size: 25)).foregroundStyle(.orange)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Calm Chat · отправка остановлена").font(.system(size: 15, weight: .semibold))
-                    Text(message).font(.system(size: 13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                }
-            }.padding(20).frame(width: 560, alignment: .leading)
-             .background(Color(red: 0.08, green: 0.09, blue: 0.10), in: RoundedRectangle(cornerRadius: 16))
-             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.orange.opacity(0.4)))
-             .preferredColorScheme(.dark))
+        toast?.contentView = NSHostingView(rootView: GuardToast(message: message))
         if let screen = NSScreen.screens.first(where: { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) }) ?? NSScreen.main {
             toast?.setFrameOrigin(NSPoint(x: screen.visibleFrame.midX - 280, y: screen.visibleFrame.minY + 100))
         }
@@ -237,5 +227,22 @@ import CalmChatCore
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             if !Task.isCancelled { self?.toast?.orderOut(nil) }
         }
+    }
+}
+
+private struct GuardToast: View {
+    let message: UIMessage
+    @ObservedObject private var ui = InterfaceSettings.shared
+    var body: some View {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: "hand.raised.fill").font(.system(size: 25)).foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(ui("Dota Tilt Guard · отправка остановлена")).font(.system(size: 15, weight: .semibold))
+                    Text(ui(message)).font(.system(size: 13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+            }.padding(20).frame(width: 560, alignment: .leading)
+             .background(Color(red: 0.08, green: 0.09, blue: 0.10), in: RoundedRectangle(cornerRadius: 16))
+             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.orange.opacity(0.4)))
+             .preferredColorScheme(.dark)
     }
 }

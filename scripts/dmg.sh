@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 SOURCE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP_PATH="${1:-$SOURCE_ROOT/../Calm Chat.app}"
+APP_PATH="${1:-$SOURCE_ROOT/../Dota Tilt Guard.app}"
 OUTPUT_ROOT="${2:-$SOURCE_ROOT/..}"
 WORK_ROOT="${3:-$SOURCE_ROOT/.build/dmg}"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")"
@@ -10,27 +10,33 @@ codesign --verify --deep --strict "$APP_PATH"
 mkdir -p "$WORK_ROOT" "$OUTPUT_ROOT"
 STAGE="$(mktemp -d "$WORK_ROOT/stage.XXXXXX")"
 trap 'rm -rf "$STAGE"' EXIT
-ditto "$APP_PATH" "$STAGE/Calm Chat.app"
+ditto "$APP_PATH" "$STAGE/Dota Tilt Guard.app"
 ln -s /Applications "$STAGE/Applications"
-cat > "$STAGE/Установка.txt" <<'INSTALL'
-Calm Chat — установка
+cp "$SOURCE_ROOT/README.ru.md" "$STAGE/Установка — русский.txt"
+cp "$SOURCE_ROOT/README.md" "$STAGE/Installation — English.txt"
+cp "$SOURCE_ROOT/COPYRIGHT.md" "$STAGE/COPYRIGHT.txt"
+mkdir -p "$STAGE/Voice setup"
+cat > "$STAGE/Voice setup/BlackHole 2ch — official installer.webloc" <<'LINK'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict><key>URL</key><string>https://existential.audio/downloads/BlackHole2ch-0.7.1.pkg</string></dict></plist>
+LINK
+cat > "$STAGE/Voice setup/Read me.txt" <<'SETUP'
+BlackHole 2ch is installed separately from its official developer.
+Open the installer link in this folder, install it, then restart your Mac.
+Already installed? Skip this step.
+For Apple speech assets, open Dota Tilt Guard → gear button → Download language via macOS.
+The first download needs internet; recognition runs locally afterward.
+BlackHole: https://github.com/ExistentialAudio/BlackHole
 
-1. Заверши уже запущенный Calm Chat через его значок в строке меню → «Завершить».
-2. Перетащи Calm Chat.app на папку Applications в этом окне.
-3. Извлеки образ диска и открой Calm Chat из Applications (Программы).
-
-Для текстового фильтра разреши приложение в Accessibility / Универсальный доступ.
-Для голосового режима разреши микрофон. Нужны macOS 26+ и BlackHole 2ch.
-На Mac, где создана эта сборка, BlackHole уже установлен.
-
-Если Accessibility не подтверждается, повторно добавь Calm Chat именно из Applications.
-Не запускай несколько версий одновременно.
-
-Голосовая защита: выбери настоящий микрофон в Calm Chat, включи защиту;
-в игре используй системный вход или BlackHole 2ch.
-Ругательство временно отключает передачу на 3 секунды, распознавание работает локально.
-INSTALL
-hdiutil create -volname "Calm Chat $VERSION" -srcfolder "$STAGE" \
-  -format UDZO -ov "$OUTPUT_ROOT/CalmChat-$VERSION.dmg"
-hdiutil verify "$OUTPUT_ROOT/CalmChat-$VERSION.dmg"
-printf 'Готово: %s/CalmChat-%s.dmg\n' "$OUTPUT_ROOT" "$VERSION"
+BlackHole 2ch устанавливается отдельно с официального сайта разработчика.
+Открой ссылку на установщик в этой папке, установи его и перезагрузи Mac.
+Если BlackHole уже установлен, пропусти этот шаг.
+Для языковых данных Apple: Dota Tilt Guard → шестерёнка → «Загрузить язык через macOS».
+При первой загрузке нужен интернет; распознавание затем работает локально.
+SETUP
+hdiutil create -volname "Dota Tilt Guard $VERSION" -srcfolder "$STAGE" \
+  -format UDZO -ov "$OUTPUT_ROOT/DotaTiltGuard-$VERSION.dmg"
+hdiutil verify "$OUTPUT_ROOT/DotaTiltGuard-$VERSION.dmg"
+(cd "$OUTPUT_ROOT" && shasum -a 256 "DotaTiltGuard-$VERSION.dmg" > "DotaTiltGuard-$VERSION.dmg.sha256")
+printf 'Готово: %s/DotaTiltGuard-%s.dmg\n' "$OUTPUT_ROOT" "$VERSION"
